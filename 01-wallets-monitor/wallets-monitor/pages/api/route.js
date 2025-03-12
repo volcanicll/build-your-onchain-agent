@@ -19,6 +19,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ skipped: true, message: 'Empty data' });
   }
 
+  // Skip PUMP_FUN transactions
+  if (txData.source === 'PUMP_FUN') {
+    return res.status(200).json({ skipped: true, message: 'Skipped PUMP_FUN transaction', signature: txData.signature });
+  }    
   // Process transaction data
   let processedData = null;
   
