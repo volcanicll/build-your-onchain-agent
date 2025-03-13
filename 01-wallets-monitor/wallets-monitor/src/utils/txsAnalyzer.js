@@ -1,10 +1,10 @@
-import BigNumber from 'bignumber.js';
-import { solPrice } from './solPrice.js';
-import { createClient } from '@supabase/supabase-js';
-import 'dotenv/config';
-import { USDC_ADDRESS, SOL_ADDRESS } from './swapProcessor.js';
-import { DexScreener } from './dexscreener.js';
-import { Connection, PublicKey } from '@solana/web3.js';
+import BigNumber from "bignumber.js";
+import { solPrice } from "./solPrice.js";
+import { createClient } from "@supabase/supabase-js";
+import "dotenv/config";
+import { USDC_ADDRESS, SOL_ADDRESS } from "./swapProcessor.js";
+import { DexScreener } from "./dexscreener.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -16,10 +16,14 @@ async function getTokenTxs(tokenAddress) {
   try {
     // Query transactions for the token
     const { data: txs } = await supabase
-      .from('txs')
-      .select('account, token_in_address, token_in_amount, token_out_address, token_out_amount, timestamp')
-      .or(`token_in_address.eq.${tokenAddress},token_out_address.eq.${tokenAddress}`)
-      .order('timestamp', { ascending: true });
+      .from("txs")
+      .select(
+        "account, token_in_address, token_in_amount, token_out_address, token_out_amount, timestamp"
+      )
+      .or(
+        `token_in_address.eq.${tokenAddress},token_out_address.eq.${tokenAddress}`
+      )
+      .order("timestamp", { ascending: true });
 
     if (!txs || txs.length === 0) {
       return {};
@@ -27,7 +31,7 @@ async function getTokenTxs(tokenAddress) {
 
     // Group transactions by account
     const accountTxs = {};
-    txs.forEach(tx => {
+    txs.forEach((tx) => {
       if (!accountTxs[tx.account]) {
         accountTxs[tx.account] = [];
       }
@@ -49,7 +53,7 @@ async function getTokenPrice(tokenAddress) {
     } else if (tokenAddress === USDC_ADDRESS) {
       return new BigNumber(1);
     } else {
-      const tokenInfo = await DexScreener.getTokenInfo('solana', tokenAddress);
+      const tokenInfo = await DexScreener.getTokenInfo("solana", tokenAddress);
       return new BigNumber(tokenInfo.priceUSD || 0);
     }
   } catch (error) {
@@ -62,21 +66,21 @@ async function getTokenPrice(tokenAddress) {
 async function getTokenSupply(tokenAddress) {
   try {
     // Connect to Solana network
-    const connection = new Connection(process.env.RPC_ENDPOINT, 'confirmed');
-    
+    const connection = new Connection(process.env.RPC_ENDPOINT, "confirmed");
+
     // Create token PublicKey
     const mintPubkey = new PublicKey(tokenAddress);
-    
+
     // Get token information
     const tokenInfo = await connection.getTokenSupply(mintPubkey);
     const totalSupply = tokenInfo.value.uiAmountString;
-    
+
     // Return default value if not available
-    return totalSupply || '1000000000';
+    return totalSupply || "1000000000";
   } catch (error) {
     console.error(`Error getting supply for token ${tokenAddress}:`, error);
     // Return default value on error
-    return '1000000000';
+    return "1000000000";
   }
 }
 
@@ -84,12 +88,12 @@ async function getTokenSupply(tokenAddress) {
 export function formatTimeAgo(timestamp) {
   const now = Math.floor(Date.now() / 1000);
   const diff = now - timestamp;
-  
+
   // Time units in seconds
   const minute = 60;
   const hour = minute * 60;
   const day = hour * 24;
-  
+
   if (diff < minute) {
     return `${diff}s ago`;
   } else if (diff < hour) {
@@ -108,11 +112,11 @@ export function formatTimeAgo(timestamp) {
 async function analyzeTxs(accountTxs, tokenAddress) {
   const totalSupply = new BigNumber(await getTokenSupply(tokenAddress));
   const result = {};
-  
+
   for (const [account, txs] of Object.entries(accountTxs)) {
-    const buyTxs = txs.filter(tx => tx.token_out_address === tokenAddress);
-    const sellTxs = txs.filter(tx => tx.token_in_address === tokenAddress);
-    
+    const buyTxs = txs.filter((tx) => tx.token_out_address === tokenAddress);
+    const sellTxs = txs.filter((tx) => tx.token_in_address === tokenAddress);
+
     if (buyTxs.length === 0) continue;
 
     let totalBuyCost = new BigNumber(0);
@@ -124,7 +128,7 @@ async function analyzeTxs(accountTxs, tokenAddress) {
       const tokenInPrice = await getTokenPrice(tx.token_in_address);
       const tokenInAmount = new BigNumber(tx.token_in_amount);
       const txCost = tokenInPrice.multipliedBy(tokenInAmount);
-      
+
       totalBuyCost = totalBuyCost.plus(txCost);
       totalBuyAmount = totalBuyAmount.plus(new BigNumber(tx.token_out_amount));
       latestBuyTime = Math.max(latestBuyTime, tx.timestamp);
@@ -132,18 +136,23 @@ async function analyzeTxs(accountTxs, tokenAddress) {
 
     // Calculate total sell amount
     const totalSellAmount = sellTxs.reduce(
-      (sum, tx) => sum.plus(new BigNumber(tx.token_in_amount)), 
+      (sum, tx) => sum.plus(new BigNumber(tx.token_in_amount)),
       new BigNumber(0)
     );
-    
+
     // Calculate holding percentage
-    const remainingAmount = BigNumber.maximum(0, totalBuyAmount.minus(totalSellAmount));
-    const holdsPercentage = remainingAmount.dividedBy(totalBuyAmount).multipliedBy(100);
-    
+    const remainingAmount = BigNumber.maximum(
+      0,
+      totalBuyAmount.minus(totalSellAmount)
+    );
+    const holdsPercentage = remainingAmount
+      .dividedBy(totalBuyAmount)
+      .multipliedBy(100);
+
     // Calculate average buy price
-    const averageBuyPrice = totalBuyAmount.isZero() ? 
-      new BigNumber(0) : 
-      totalBuyCost.dividedBy(totalBuyAmount);
+    const averageBuyPrice = totalBuyAmount.isZero()
+      ? new BigNumber(0)
+      : totalBuyCost.dividedBy(totalBuyAmount);
     // Calculate average market cap at buy time
     const averageMarketCap = averageBuyPrice.multipliedBy(totalSupply);
 
@@ -151,36 +160,39 @@ async function analyzeTxs(accountTxs, tokenAddress) {
       totalBuyCost: totalBuyCost.toFixed(0),
       averageBuyPrice: averageBuyPrice.toFixed(6),
       averageMarketCap: averageMarketCap.toFixed(0),
-      buyTime: formatTimeAgo(latestBuyTime), 
-      holdsPercentage: holdsPercentage.toFixed(2) + '%'
+      buyTime: formatTimeAgo(latestBuyTime),
+      holdsPercentage: holdsPercentage.toFixed(2) + "%",
     };
   }
 
   // Get all wallet addresses
   const walletAddresses = Object.keys(result);
-  
+
   // Query wallet names from supabase
   const { data: wallets } = await supabase
-    .from('wallets')
-    .select('address, name')
-    .in('address', walletAddresses);
-    
+    .from("wallets")
+    .select("address, name")
+    .in("address", walletAddresses);
+
   // Create address to name mapping
   const addressToName = {};
   if (wallets) {
-    wallets.forEach(wallet => {
+    wallets.forEach((wallet) => {
       addressToName[wallet.address] = wallet.name;
     });
   }
-  
+
   // Add wallet names to analysis results
-  const resultWithNames = Object.entries(result).reduce((acc, [address, data]) => {
-    acc[address] = {
-      ...data,
-      walletName: addressToName[address] || 'Unknown'
-    };
-    return acc;
-  }, {});
+  const resultWithNames = Object.entries(result).reduce(
+    (acc, [address, data]) => {
+      acc[address] = {
+        ...data,
+        walletName: addressToName[address] || "Unknown",
+      };
+      return acc;
+    },
+    {}
+  );
 
   return resultWithNames;
 }
@@ -192,9 +204,10 @@ export async function analyzeTokenTxs(tokenAddress) {
     const analysis = await analyzeTxs(transactionData, tokenAddress);
     return analysis;
   } catch (error) {
-    console.error(`Error analyzing transactions for token ${tokenAddress}:`, error);
+    console.error(
+      `Error analyzing transactions for token ${tokenAddress}:`,
+      error
+    );
     throw error;
   }
 }
-
-

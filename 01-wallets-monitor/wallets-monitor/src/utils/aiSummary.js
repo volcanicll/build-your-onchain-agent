@@ -1,5 +1,6 @@
 import { searchTwitter, getUserTimeline } from "./tweetApi.js";
 import { sendTelegramMessage } from "./telegram.js";
+import { sendWxMessage } from "./wxGroupBot.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 
@@ -157,6 +158,7 @@ export async function sendSumMessage(tokenInfo, replyToMessageId) {
   }
 
   const tgResponse = await sendTelegramMessage(message, replyToMessageId);
+  const wxResponse = await sendWxMessage(message);
 
   return tgResponse;
 }
