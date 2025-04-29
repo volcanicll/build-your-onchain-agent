@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { axiosClient } from './axiosClient.js';
 
 // Cache class for SOL price to minimize API calls
 class SolPriceCache {
@@ -20,9 +20,7 @@ class SolPriceCache {
 
     try {
       // Get latest price from DexScreener
-      const response = await axios.get('https://api.dexscreener.com/tokens/v1/solana/So11111111111111111111111111111111111111112', {
-        headers: {}
-      })
+      const response = await axiosClient.get('https://api.dexscreener.com/tokens/v1/solana/So11111111111111111111111111111111111111112')
       const data = await response.data;
       
       // Extract SOL price from response data

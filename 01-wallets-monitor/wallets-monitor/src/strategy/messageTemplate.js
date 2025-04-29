@@ -27,7 +27,8 @@ function formatSmartMoney(analysis) {
 }
 
 // Creates a formatted message with token information and smart money analysis
-export function createMsg(tokenInfo, analysis) {
+export function createMsg(tokenInfo, analysis, analyzeTokenInfo) {
+
   const smartMoneyCount = Object.keys(analysis).length;
   
   return `
@@ -42,6 +43,9 @@ export function createMsg(tokenInfo, analysis) {
 \u{1F90E} <b>USD:</b> <code>$${Number(tokenInfo.priceUSD).toFixed(6)}</code>
 \u{1F90D} <b>Age:</b> <code>${formatTimeAgo(tokenInfo.createdAt)}</code>
 \u{1F49B} <b>6H:</b> <code>${tokenInfo.changeH6}%</code>
+
+${analyzeTokenInfo}
+
 \u{1F90E} <b>SmartMoney:</b>
 ${smartMoneyCount} wallets bought $${tokenInfo.symbol}
 

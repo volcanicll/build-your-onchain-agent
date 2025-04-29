@@ -1,48 +1,16 @@
-import { DexScreener } from '../utils/dexscreener.js';
 import { createClient } from '@supabase/supabase-js';
 import { SOL_ADDRESS, USDC_ADDRESS } from '../utils/swapProcessor.js';
-import { sendTelegramMessage } from '../utils/telegram.js';
-import { analyzeTokenTxs } from '../utils/txsAnalyzer.js';
-import { createMsg } from './messageTemplate.js';
-import { sendSumMessage } from '../utils/aiSummary.js';
+import { checkFilter } from './checkFilter.js';
 import dotenv from 'dotenv';
+
 
 dotenv.config();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Configuration constants
-const MAX_AGE_DAYS = 7;
-const MIN_MARKET_CAP = 100000; // 100k
 
 const getTimeStamp = () => {
   return new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 };
-
-// Check if token meets filtering criteria
-async function checkFilter(tokenAddress) {
-  try {
-    const tokenInfo = await DexScreener.getTokenInfo('solana', tokenAddress);   
-    if (!tokenInfo) return;
-    
-    const pairAge = (Date.now() / 1000 - tokenInfo.createdAt) / (60 * 60 * 24);
-    if (pairAge <= MAX_AGE_DAYS && tokenInfo.marketCap >= MIN_MARKET_CAP) {
-      const analysis = await analyzeTokenTxs(tokenAddress);
-      
-      // Create and send message to Telegram
-      const message = createMsg(tokenInfo, analysis);
-      const tgResponse = await sendTelegramMessage(message);
-      
-      if (tgResponse?.ok === true) {
-        const messageId = tgResponse.result.message_id;
-        // Send AI summary message
-        await sendSumMessage(tokenInfo, messageId);
-        console.log(`[${getTimeStamp()}] Successfully sent analysis for token ${tokenAddress} to Telegram`);
-      } 
-    } 
-  } catch (error) {
-    console.error(`[${getTimeStamp()}] Error checking token ${tokenAddress}:`, error);
-  }
-}
 
 // Subscribe to INSERT events on the txs table
 async function startMonitor() {
@@ -80,10 +48,16 @@ async function startMonitor() {
             console.error(`[${getTimeStamp()}] Query error:`, error);
             return;
           }
-          
+
+
+
           // If transactions from other wallets found
           if (data && data.length > 0) {
             console.log(`[${getTimeStamp()}] Detected new multi-wallet transaction for token: ${tokenOutAddress}`);
+            // Call filter check function
+            await checkFilter(tokenOutAddress);
+          } else if (currentAccount == 'DNfuF1L62WWyW3pNakVkyGGFzVVhj4Yr52jSmdTyeBHm') {
+            console.log(`[${getTimeStamp()}] Gake buy for token: ${tokenOutAddress}`);
             // Call filter check function
             await checkFilter(tokenOutAddress);
           }

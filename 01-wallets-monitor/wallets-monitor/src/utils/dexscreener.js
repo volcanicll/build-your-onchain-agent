@@ -1,23 +1,5 @@
-import axios from 'axios';
-import axiosRetry from 'axios-retry';
+import { axiosClient } from './axiosClient.js';
 
-// Create axios client with custom configuration
-const client = axios.create({
-  timeout: 5000,
-  headers: {
-    'User-Agent': 'Mozilla/5.0'
-  }
-});
-
-// Configure retry mechanism
-axiosRetry(client, { 
-  retries: 3,
-  retryDelay: axiosRetry.exponentialDelay,
-  retryCondition: (error) => {
-    // Custom retry conditions
-    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.code === 'ECONNRESET';
-  }
-});
 
 // Token information class to parse and store token data
 export class TokenInfo {
@@ -58,7 +40,7 @@ export class TokenInfo {
 export class DexScreener {
   // Fetches token information from DexScreener API
   static async getTokenInfo(chainId, tokenAddress) {
-    const response = await client.get(
+    const response = await axiosClient.get(
       `https://api.dexscreener.com/tokens/v1/${chainId}/${tokenAddress}`
     ).catch(error => {
       console.error('DexScreener API Error:', error.message);
@@ -66,7 +48,8 @@ export class DexScreener {
     });
     
     if (!response.data || response.data.length === 0) {
-      throw new Error('No data returned from DexScreener');
+      // throw new Error('No data returned from DexScreener');
+      return null;
     }
     
     return new TokenInfo(response.data);

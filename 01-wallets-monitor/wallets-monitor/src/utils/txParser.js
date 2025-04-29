@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { axiosClient } from './axiosClient.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,11 +7,8 @@ dotenv.config();
 export async function solParser(signature) {
   const BASE_URL = "https://api.shyft.to/sol/v1";
   
-  const response = await axios.get(`${BASE_URL}/transaction/parsed`, {
-    params: {
-      network: 'mainnet-beta',
-      txn_signature: signature
-    },
+  const response = await axiosClient.get(`${BASE_URL}/transaction/parsed?network=mainnet-beta&txn_signature=${signature}`,
+    {
     headers: {
       'x-api-key': process.env.SHYFT_API_KEY
     }

@@ -1,24 +1,11 @@
-import axios from 'axios';
 import dotenv from 'dotenv';
-import axiosRetry from 'axios-retry';
-
+import { axiosClient } from './axiosClient.js';
 dotenv.config();
 
 const RAPID_API_KEY = process.env.RAPID_API_KEY;
 const TWITTER_API_HOST = 'twitter-api45.p.rapidapi.com';
 // https://rapidapi.com/alexanderxbx/api/twitter-api45
 
-axiosRetry(axios, {
-  retries: 3,
-  retryDelay: (retryCount) => {
-    return retryCount * 1000; // Increasing delay for each retry
-  },
-  retryCondition: (error) => {
-    // Only retry on network errors or 5xx errors
-    return axiosRetry.isNetworkOrIdempotentRequestError(error) || 
-           (error.response && error.response.status >= 500);
-  }
-});
 
 // Searches for content on Twitter with specified query and search type
 export async function searchTwitter(query, searchType = 'Top') {
@@ -26,7 +13,7 @@ export async function searchTwitter(query, searchType = 'Top') {
     method: 'GET',
     url: 'https://twitter-api45.p.rapidapi.com/search.php',
     params: {
-      query,
+      query: query,
       search_type: searchType
     },
     headers: {
@@ -35,7 +22,7 @@ export async function searchTwitter(query, searchType = 'Top') {
     }
   };
 
-  const response = await axios.request(options).catch(error => {
+  const response = await axiosClient.request(options).catch(error => {
     console.error('Twitter API Error:', error.message);
     throw error;
   });
@@ -75,17 +62,17 @@ export async function searchTwitter(query, searchType = 'Top') {
 export async function getUserTimeline(screenname) {
   const options = {
     method: 'GET',
-    url: 'https://twitter-api45.p.rapidapi.com/timeline.php',
+    url: 'https://twitter-api45.p.rapidapi.com/screenname.php',
     params: {
-      screenname
+      screenname: screenname,
     },
     headers: {
       'x-rapidapi-key': RAPID_API_KEY,
-      'x-rapidapi-host': TWITTER_API_HOST
+      'x-rapidapi-host': 'twitter-api45.p.rapidapi.com'
     }
   };
 
-  const response = await axios.request(options).catch(error => {
+  const response = await axiosClient.request(options).catch(error => {
     console.error('Twitter API Error:', error.message);
     throw error;
   });
