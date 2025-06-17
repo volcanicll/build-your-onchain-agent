@@ -1,7 +1,7 @@
-import BigNumber from 'bignumber.js';
+import BigNumber from "bignumber.js";
 
-export const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
-export const USDC_ADDRESS = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+export const SOL_ADDRESS = "So11111111111111111111111111111111111111112";
+export const USDC_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 // Formats token amount by dividing by the appropriate decimal power
 export function formatAmount(amount, decimals) {
@@ -20,7 +20,7 @@ export function processSwapData(webhookData) {
     processedData = {
       account: webhookData.feePayer,
       token_in_address: SOL_ADDRESS,
-      token_in_amount: formatAmount(parseInt(swapEvent.nativeInput.amount), 9)
+      token_in_amount: formatAmount(parseInt(swapEvent.nativeInput.amount), 9),
     };
   } else if (swapEvent.tokenInputs && swapEvent.tokenInputs.length > 0) {
     const tokenInput = swapEvent.tokenInputs[0];
@@ -30,14 +30,17 @@ export function processSwapData(webhookData) {
       token_in_amount: formatAmount(
         parseInt(tokenInput.rawTokenAmount.tokenAmount),
         tokenInput.rawTokenAmount.decimals
-      )
+      ),
     };
   }
 
   // Process token_out information
   if (swapEvent.nativeOutput && swapEvent.nativeOutput.amount) {
     processedData.token_out_address = SOL_ADDRESS;
-    processedData.token_out_amount = formatAmount(parseInt(swapEvent.nativeOutput.amount), 9);
+    processedData.token_out_amount = formatAmount(
+      parseInt(swapEvent.nativeOutput.amount),
+      9
+    );
   } else if (swapEvent.tokenOutputs && swapEvent.tokenOutputs.length > 0) {
     const tokenOutput = swapEvent.tokenOutputs[0];
     processedData.token_out_address = tokenOutput.mint;
@@ -51,11 +54,20 @@ export function processSwapData(webhookData) {
   processedData.timestamp = webhookData.timestamp;
   processedData.description = webhookData.description;
 
-  const requiredFields = ['account', 'token_in_address', 'token_in_amount', 'token_out_address', 'token_out_amount'];
-  const hasAllFields = requiredFields.every(field => processedData[field] !== undefined && processedData[field] !== null);
+  const requiredFields = [
+    "account",
+    "token_in_address",
+    "token_in_amount",
+    "token_out_address",
+    "token_out_amount",
+  ];
+  const hasAllFields = requiredFields.every(
+    (field) =>
+      processedData[field] !== undefined && processedData[field] !== null
+  );
 
   if (!hasAllFields) {
-    console.log('Incomplete swap data for transaction:', webhookData.signature);
+    console.log("Incomplete swap data for transaction:", webhookData.signature);
     return null;
   }
 
