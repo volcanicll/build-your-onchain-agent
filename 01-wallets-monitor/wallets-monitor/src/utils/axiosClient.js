@@ -4,11 +4,6 @@ import axiosRetry from "axios-retry";
 // Create axios client with custom configuration
 export const axiosClient = axios.create({
   timeout: 30000,
-  proxy: {
-    host: "127.0.0.1",
-    port: 7890,
-    protocol: "http",
-  },
   headers: {
     "User-Agent": "Mozilla/5.0",
     Connection: "keep-alive",
