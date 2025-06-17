@@ -1,5 +1,6 @@
-import dotenv from 'dotenv';
-import axiosClient from './axiosClient.js';
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+import axiosClient from "./axiosClient.js";
 
 dotenv.config();
 
@@ -34,11 +35,10 @@ export async function sendTelegramMessage(message, replyToMessageId = null) {
     if (!data.ok || data.description?.includes('Unknown error')) {
       throw new Error(`Telegram API error: ${data.description || 'Unknown error'}`);
     }
-    
+
     return data;
   } catch (error) {
-    console.error('Error sending Telegram message:', error);
-    throw error; 
+    console.error("Error sending Telegram message:", error);
+    throw error;
   }
 }
-

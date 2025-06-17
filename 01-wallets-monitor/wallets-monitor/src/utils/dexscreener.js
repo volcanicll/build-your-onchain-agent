@@ -1,4 +1,4 @@
-import { axiosClient } from "./axiosClient.js";
+import axiosClient from "./axiosClient.js";
 
 // Token information class to parse and store token data
 export class TokenInfo {
@@ -47,7 +47,7 @@ export class DexScreener {
       });
 
     if (!response.data || response.data.length === 0) {
-      return null;
+      throw new Error("No data returned from DexScreener");
     }
 
     return new TokenInfo(response.data);
