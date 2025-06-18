@@ -1,15 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
-import { SOL_ADDRESS, USDC_ADDRESS } from '../utils/swapProcessor.js';
-import { checkFilter } from './checkFilter.js';
-import dotenv from 'dotenv';
-
+import { createClient } from "@supabase/supabase-js";
+import { SOL_ADDRESS, USDC_ADDRESS } from "../utils/swapProcessor.js";
+import { checkFilter } from "./checkFilter.js";
+import dotenv from "dotenv";
 
 dotenv.config();
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
-
 
 const getTimeStamp = () => {
   return new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
@@ -55,8 +53,6 @@ async function startMonitor() {
             return;
           }
 
-
-
           // If transactions from other wallets found
           if (data && data.length > 0) {
             console.log(
@@ -64,8 +60,12 @@ async function startMonitor() {
             );
             // Call filter check function
             await checkFilter(tokenOutAddress);
-          } else if (currentAccount == 'DNfuF1L62WWyW3pNakVkyGGFzVVhj4Yr52jSmdTyeBHm') {
-            console.log(`[${getTimeStamp()}] Gake buy for token: ${tokenOutAddress}`);
+          } else if (
+            currentAccount == "DNfuF1L62WWyW3pNakVkyGGFzVVhj4Yr52jSmdTyeBHm"
+          ) {
+            console.log(
+              `[${getTimeStamp()}] Gake buy for token: ${tokenOutAddress}`
+            );
             // Call filter check function
             await checkFilter(tokenOutAddress);
           }

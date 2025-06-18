@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { processSwapData } from "../../src/utils/swapProcessor";
 import { solParser } from "../../src/utils/txParser";
+import { SOL_ADDRESS, USDC_ADDRESS } from "../../src/utils/swapProcessor.js";
+import { checkFilter } from "../../src/strategy/checkFilter.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -78,6 +80,43 @@ export default async function handler(req, res) {
     console.error("Error inserting into Supabase:", error);
     return res.status(500).json({ error: error });
   }
+
+  // Post-insert monitoring check
+  const postInsertCheck = async (processedData) => {
+    const { token_out_address, account } = processedData;
+
+    if (
+      token_out_address !== SOL_ADDRESS &&
+      token_out_address !== USDC_ADDRESS
+    ) {
+      const sixHoursAgo = new Date();
+      sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
+
+      const { data, error: queryError } = await supabase
+        .from("txs")
+        .select("id")
+        .eq("token_out_address", token_out_address)
+        .neq("account", account)
+        .gte("timestamp", Math.floor(sixHoursAgo.getTime() / 1000))
+        .limit(1);
+
+      if (queryError) {
+        console.error("Monitor query error:", queryError);
+        return;
+      }
+
+      if (
+        data?.length > 0 ||
+        account === "DNfuF1L62WWyW3pNakVkyGGFzVVhj4Yr52jSmdTyeBHm"
+      ) {
+        await checkFilter(token_out_address).catch(console.error);
+      }
+    }
+  };
+
+  // Execute monitoring check asynchronously
+  postInsertCheck(processedData).catch(console.error);
+
   console.log(
     "Successfully processed and stored with parser:",
     txData.events?.swap ? "helius" : "shyft"

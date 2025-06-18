@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axiosClient from "./axiosClient.js";
 import dotenv from "dotenv";
-import TurndownService from 'turndown';
+import TurndownService from "turndown";
 
 dotenv.config();
 
@@ -8,28 +8,31 @@ const { WX_BOT_KEY } = process.env;
 
 // Initialize turndown service
 const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  codeBlockStyle: 'fenced',
-  bulletListMarker: '-',  // 保持 - 作为列表标记
-  br: '\n',              // 保持换行
+  headingStyle: "atx",
+  codeBlockStyle: "fenced",
+  bulletListMarker: "-", // 保持 - 作为列表标记
+  br: "\n", // 保持换行
   blankReplacement: function (content, node) {
-    return node.isBlock ? '\n\n' : ' ';  // 保持段落间的空行
-  }
+    return node.isBlock ? "\n\n" : " "; // 保持段落间的空行
+  },
 });
 
 // 添加自定义规则来处理 blockquote
-turndownService.addRule('blockquote', {
-  filter: 'blockquote',
+turndownService.addRule("blockquote", {
+  filter: "blockquote",
   replacement: function (content) {
     // 保持原有缩进和换行
-    return content.split('\n').map(line => `> ${line}`).join('\n');
-  }
+    return content
+      .split("\n")
+      .map((line) => `> ${line}`)
+      .join("\n");
+  },
 });
 
 // Message Strategy Interface
 class MessageStrategy {
   createMessage(content, options = {}) {
-    throw new Error('createMessage method must be implemented');
+    throw new Error("createMessage method must be implemented");
   }
 }
 
@@ -38,12 +41,12 @@ class TextMessageStrategy extends MessageStrategy {
   createMessage(content, options = {}) {
     const { mentionedList = [], mentionedMobileList = [] } = options;
     return {
-      msgtype: 'text',
+      msgtype: "text",
       text: {
         content,
         mentioned_list: mentionedList,
-        mentioned_mobile_list: mentionedMobileList
-      }
+        mentioned_mobile_list: mentionedMobileList,
+      },
     };
   }
 }
@@ -52,10 +55,10 @@ class TextMessageStrategy extends MessageStrategy {
 class MarkdownMessageStrategy extends MessageStrategy {
   createMessage(content) {
     return {
-      msgtype: 'markdown',
+      msgtype: "markdown",
       markdown: {
-        content
-      }
+        content,
+      },
     };
   }
 }
@@ -64,11 +67,11 @@ class MarkdownMessageStrategy extends MessageStrategy {
 class ImageMessageStrategy extends MessageStrategy {
   createMessage(base64, md5) {
     return {
-      msgtype: 'image',
+      msgtype: "image",
       image: {
         base64,
-        md5
-      }
+        md5,
+      },
     };
   }
 }
@@ -77,10 +80,10 @@ class ImageMessageStrategy extends MessageStrategy {
 class NewsMessageStrategy extends MessageStrategy {
   createMessage(articles) {
     return {
-      msgtype: 'news',
+      msgtype: "news",
       news: {
-        articles
-      }
+        articles,
+      },
     };
   }
 }
@@ -92,14 +95,14 @@ class NewsMessageStrategy extends MessageStrategy {
 class WeChatBot {
   constructor() {
     if (!WX_BOT_KEY) {
-      throw new Error('WX_BOT_KEY is required in environment variables');
+      throw new Error("WX_BOT_KEY is required in environment variables");
     }
     this.webhook = `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${WX_BOT_KEY}`;
     this.strategies = {
       text: new TextMessageStrategy(),
       markdown: new MarkdownMessageStrategy(),
       image: new ImageMessageStrategy(),
-      news: new NewsMessageStrategy()
+      news: new NewsMessageStrategy(),
     };
   }
 
@@ -111,7 +114,7 @@ class WeChatBot {
    */
   async sendHtml(html, options = {}) {
     const markdown = turndownService.turndown(html);
-    return this.send('markdown', markdown, options);
+    return this.send("markdown", markdown, options);
   }
 
   /**
@@ -139,13 +142,13 @@ class WeChatBot {
    */
   async sendMessage(message) {
     try {
-      const response = await axios.post(this.webhook, message);
+      const response = await axiosClient.post(this.webhook, message);
       if (response.data.errcode !== 0) {
         throw new Error(`WeChat Work bot error: ${response.data.errmsg}`);
       }
       return response.data;
     } catch (error) {
-      console.error('Failed to send message to WeChat Work bot:', error);
+      console.error("Failed to send message to WeChat Work bot:", error);
       throw error;
     }
   }
@@ -155,4 +158,4 @@ class WeChatBot {
 const wechatBot = new WeChatBot();
 
 // Export the instance directly
-export default wechatBot; 
+export default wechatBot;
