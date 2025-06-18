@@ -1,4 +1,5 @@
-import axiosClient from "./axiosClient.js";
+import { axiosClient } from "./axiosClient.js";
+import { requestQueue } from "./requestQueue.js";
 
 // Token information class to parse and store token data
 export class TokenInfo {
@@ -37,19 +38,39 @@ export class TokenInfo {
 
 // DexScreener API wrapper class
 export class DexScreener {
-  // Fetches token information from DexScreener API
-  static async getTokenInfo(chainId, tokenAddress) {
-    const response = await axiosClient
-      .get(`https://api.dexscreener.com/tokens/v1/${chainId}/${tokenAddress}`)
-      .catch((error) => {
-        console.error("DexScreener API Error:", error.message);
+  constructor() {
+    this.baseUrl = "https://api.dexscreener.com/latest/dex";
+  }
+
+  async getTokenInfo(address) {
+    const requestKey = `token-${address}`;
+
+    return requestQueue.addRequest(requestKey, async () => {
+      try {
+        console.log(`Fetching token info for ${address}`);
+        const response = await axiosClient.get(
+          `${this.baseUrl}/tokens/${address}`
+        );
+
+        if (
+          !response.data ||
+          !response.data.pairs ||
+          response.data.pairs.length === 0
+        ) {
+          throw new Error(`No pairs found for token ${address}`);
+        }
+
+        return new TokenInfo(response.data.pairs);
+      } catch (error) {
+        console.error(
+          `Failed to fetch token info for ${address}:`,
+          error.message
+        );
         throw error;
-      });
-
-    if (!response.data || response.data.length === 0) {
-      throw new Error("No data returned from DexScreener");
-    }
-
-    return new TokenInfo(response.data);
+      }
+    });
   }
 }
+
+// 创建单例实例
+export const dexScreener = new DexScreener();

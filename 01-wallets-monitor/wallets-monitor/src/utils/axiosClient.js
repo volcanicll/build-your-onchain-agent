@@ -13,7 +13,9 @@ export const axiosClient = axios.create({
 // Configure retry mechanism
 axiosRetry(axiosClient, {
   retries: 3,
-  retryDelay: axiosRetry.exponentialDelay,
+  retryDelay: (retryCount) => {
+    return Math.min(1000 * Math.pow(2, retryCount), 10000);
+  },
   retryCondition: (error) => {
     // Custom retry conditions
     return (
@@ -24,7 +26,9 @@ axiosRetry(axiosClient, {
     );
   },
   onRetry: (retryCount, error, requestConfig) => {
-    console.log(`Retry attempt ${retryCount} for ${requestConfig.url}`);
+    console.log(
+      `Retry attempt ${retryCount} for ${requestConfig.url}. Error: ${error.message}`
+    );
   },
 });
 
