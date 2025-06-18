@@ -1,7 +1,6 @@
 import { axiosClient } from "./axiosClient.js";
 import { requestQueue } from "./requestQueue.js";
 
-// Token information class to parse and store token data
 export class TokenInfo {
   constructor(data) {
     const pair = data[0];
@@ -14,7 +13,7 @@ export class TokenInfo {
     this.liquidity = pair.liquidity?.usd;
     this.marketCap = pair.marketCap;
     this.priceUSD = pair.priceUsd;
-    this.createdAt = Math.floor(pair.pairCreatedAt / 1000); // Convert to seconds timestamp
+    this.createdAt = Math.floor(pair.pairCreatedAt / 1000);
 
     // Volume data
     const volume = pair.volume || {};
@@ -42,7 +41,7 @@ export class DexScreener {
     this.baseUrl = "https://api.dexscreener.com/latest/dex";
   }
 
-  async getTokenInfo(address) {
+  static async getTokenInfo(address) {
     const requestKey = `token-${address}`;
 
     return requestQueue.addRequest(requestKey, async () => {
@@ -69,6 +68,25 @@ export class DexScreener {
         throw error;
       }
     });
+  }
+
+  static async getMultipleTokensInfo(addresses) {
+    const uniqueAddresses = [...new Set(addresses)]; // 去重
+    const promises = uniqueAddresses.map((address) =>
+      this.getTokenInfo(address)
+    );
+
+    try {
+      const results = await Promise.allSettled(promises);
+      return results.map((result, index) => ({
+        address: uniqueAddresses[index],
+        data: result.status === "fulfilled" ? result.value : null,
+        error: result.status === "rejected" ? result.reason : null,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch multiple tokens info:", error);
+      throw error;
+    }
   }
 }
 
